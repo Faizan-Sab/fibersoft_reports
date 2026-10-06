@@ -21,3 +21,4 @@ jobs:
         working-directory: frontend
       - run: yarn build
         working-directory: frontend
+      - run: node scripts/use_prebuilt.cjs

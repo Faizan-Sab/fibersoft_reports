@@ -10,6 +10,12 @@ Use an existing Frappe bench (the app declares Frappe >=14,<17 and Python >=3.10
 ERPNext is optional. Building the frontend requires Node 18 or newer and Yarn
 Classic. Built frontend assets are also included in the repository.
 
+Production `bench build --app fibersoft_reports` verifies and uses the committed
+frontend assets instead of compiling Vue inside the server container. This avoids
+memory-heavy Vite compilation on installation. Developers rebuild explicitly with
+`yarn build:frontend` from the app root and commit both `public/frontend/` and
+`www/fibersoft.html` before deployment.
+
 ```bash
 bench get-app https://github.com/Faizan-Sab/fibersoft_reports
 bench --site your-site.localhost install-app fibersoft_reports

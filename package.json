@@ -5,6 +5,7 @@
   "description": "Beautiful, fast, live-updating reports and dashboards for Frappe",
   "scripts": {
     "dev": "cd frontend && yarn dev",
-    "build": "cd frontend && yarn install --frozen-lockfile && yarn build"
+    "build": "node scripts/use_prebuilt.cjs",
+    "build:frontend": "cd frontend && yarn install --frozen-lockfile && yarn build"
   }
 }
