@@ -152,8 +152,9 @@ bench build --app fibersoft_reports
 
 Then open `https://your-site.localhost/fibersoft`.
 
-> The SPA is built from `frontend/` by the root `yarn build` script, which
-> `bench build` runs for you. To build it by hand: `yarn build` in the app root.
+> Production bench builds use the compiled frontend committed in this repository.
+> To regenerate it from source, run `yarn build:frontend` in the app root and commit
+> the generated assets and page together.
 
 ### Frontend development
 
