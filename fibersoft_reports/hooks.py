@@ -1,0 +1,283 @@
+# Copyright (c) 2026 Lumen Solutions. All rights reserved.
+# SPDX-License-Identifier: LicenseRef-Lumen-Proprietary
+# Proprietary and confidential. See license.txt. "Lumen Reports" is a trademark of Lumen Solutions.
+app_name = "fibersoft_reports"
+app_title = "Fibersoft Reports"
+app_publisher = "Lumen Solutions"
+app_description = "Beautiful, fast, live-updating dashboards and reports for Frappe — with a no-code builder and plain-English Ask AI"
+app_email = "hello@lumen-solutions.co"
+app_license = "Proprietary"
+app_logo_url = "/assets/fibersoft_reports/logo/svg/app-icon.svg"
+required_apps = []  # ERPNext optional; supports Frappe v15 and v16 (see pyproject.toml)
+
+# Apps
+# ------------------
+
+# Fibersoft reads whatever doctypes a site already has, so ERPNext is optional.
+# required_apps = []
+
+add_to_apps_screen = [
+	{
+		"name": "fibersoft_reports",
+		"logo": "/assets/fibersoft_reports/logo/svg/app-icon.svg",
+		"title": "Fibersoft Reports",
+		"route": "/fibersoft",
+	}
+]
+
+# Includes in <head>
+# ------------------
+
+# include js, css files in header of desk.html
+# app_include_css = "/assets/fibersoft_reports/css/fibersoft_reports.css"
+# app_include_js = "/assets/fibersoft_reports/js/fibersoft_reports.js"
+
+# include js, css files in header of web template
+# web_include_css = "/assets/fibersoft_reports/css/fibersoft_reports.css"
+# web_include_js = "/assets/fibersoft_reports/js/fibersoft_reports.js"
+
+# include custom scss in every website theme (without file extension ".scss")
+# website_theme_scss = "fibersoft_reports/public/scss/website"
+
+# include js, css files in header of web form
+# webform_include_js = {"doctype": "public/js/doctype.js"}
+# webform_include_css = {"doctype": "public/css/doctype.css"}
+
+# include js in page
+# page_js = {"page" : "public/js/file.js"}
+
+# include js in doctype views
+# doctype_js = {"doctype" : "public/js/doctype.js"}
+# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+# doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
+# doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
+
+# Svg Icons
+# ------------------
+# include app icons in desk
+# app_include_icons = "fibersoft_reports/public/icons.svg"
+
+# Home Pages
+# ----------
+
+# application home page (will override Website Settings)
+# home_page = "login"
+
+# website user home page (by Role)
+# role_home_page = {
+# 	"Role": "home_page"
+# }
+
+# Generators
+# ----------
+
+# automatically create page for each record of this doctype
+# website_generators = ["Web Page"]
+
+# Jinja
+# ----------
+
+# add methods and filters to jinja environment
+# jinja = {
+# 	"methods": "fibersoft_reports.utils.jinja_methods",
+# 	"filters": "fibersoft_reports.utils.jinja_filters"
+# }
+
+# Installation
+# ------------
+
+# before_install = "fibersoft_reports.install.before_install"
+# after_install = "fibersoft_reports.install.after_install"
+
+# Uninstallation
+# ------------
+
+# before_uninstall = "fibersoft_reports.uninstall.before_uninstall"
+# after_uninstall = "fibersoft_reports.uninstall.after_uninstall"
+
+# Integration Setup
+# ------------------
+# To set up dependencies/integrations with other apps
+# Name of the app being installed is passed as an argument
+
+# before_app_install = "fibersoft_reports.utils.before_app_install"
+# after_app_install = "fibersoft_reports.utils.after_app_install"
+
+# Integration Cleanup
+# -------------------
+# To clean up dependencies/integrations with other apps
+# Name of the app being uninstalled is passed as an argument
+
+# before_app_uninstall = "fibersoft_reports.utils.before_app_uninstall"
+# after_app_uninstall = "fibersoft_reports.utils.after_app_uninstall"
+
+# Desk Notifications
+# ------------------
+# See frappe.core.notifications.get_notification_config
+
+# notification_config = "fibersoft_reports.notifications.get_notification_config"
+
+# Permissions
+# -----------
+# Permissions evaluated in scripted ways
+
+# permission_query_conditions = {
+# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+# }
+#
+# has_permission = {
+# 	"Event": "frappe.desk.doctype.event.event.has_permission",
+# }
+
+# DocType Class
+# ---------------
+# Override standard doctype classes
+
+# override_doctype_class = {
+# 	"ToDo": "custom_app.overrides.CustomToDo"
+# }
+
+# Document Events
+# ---------------
+# Hook on document methods and events
+
+# doc_events = {
+# 	"*": {
+# 		"on_update": "method",
+# 		"on_cancel": "method",
+# 		"on_trash": "method"
+# 	}
+# }
+
+# create the app's roles on install and keep them present across migrations
+after_install = "fibersoft_reports.setup.after_install"
+after_migrate = "fibersoft_reports.setup.after_migrate"
+
+doc_events = {
+	"*": {
+		"on_change": "fibersoft_reports.realtime.notify_doc_change",
+		"after_delete": "fibersoft_reports.realtime.notify_doc_change",
+	}
+}
+
+permission_query_conditions = {
+	"Fibersoft Dashboard": "fibersoft_reports.permissions.get_permission_query_conditions",
+}
+
+has_permission = {
+	"Fibersoft Dashboard": "fibersoft_reports.permissions.has_permission",
+}
+
+website_route_rules = [
+	{"from_route": "/fibersoft/<path:app_path>", "to_route": "fibersoft"},
+]
+
+# scheduled report delivery: every ten minutes, send whatever has come due
+scheduler_events = {
+	"cron": {
+		"*/10 * * * *": ["fibersoft_reports.schedules.run_due"],
+	},
+}
+
+# Scheduled Tasks
+# ---------------
+
+# scheduler_events = {
+# 	"all": [
+# 		"fibersoft_reports.tasks.all"
+# 	],
+# 	"daily": [
+# 		"fibersoft_reports.tasks.daily"
+# 	],
+# 	"hourly": [
+# 		"fibersoft_reports.tasks.hourly"
+# 	],
+# 	"weekly": [
+# 		"fibersoft_reports.tasks.weekly"
+# 	],
+# 	"monthly": [
+# 		"fibersoft_reports.tasks.monthly"
+# 	],
+# }
+
+# Testing
+# -------
+
+# before_tests = "fibersoft_reports.install.before_tests"
+
+# Overriding Methods
+# ------------------------------
+#
+# override_whitelisted_methods = {
+# 	"frappe.desk.doctype.event.event.get_events": "fibersoft_reports.event.get_events"
+# }
+#
+# each overriding function accepts a `data` argument;
+# generated from the base implementation of the doctype dashboard,
+# along with any modifications made in other Frappe apps
+# override_doctype_dashboards = {
+# 	"Task": "fibersoft_reports.task.get_dashboard_data"
+# }
+
+# exempt linked doctypes from being automatically cancelled
+#
+# auto_cancel_exempted_doctypes = ["Auto Repeat"]
+
+# Ignore links to specified DocTypes when deleting documents
+# -----------------------------------------------------------
+
+# ignore_links_on_delete = ["Communication", "ToDo"]
+
+# Request Events
+# ----------------
+# before_request = ["fibersoft_reports.utils.before_request"]
+# after_request = ["fibersoft_reports.utils.after_request"]
+
+# Job Events
+# ----------
+# before_job = ["fibersoft_reports.utils.before_job"]
+# after_job = ["fibersoft_reports.utils.after_job"]
+
+# User Data Protection
+# --------------------
+
+# user_data_fields = [
+# 	{
+# 		"doctype": "{doctype_1}",
+# 		"filter_by": "{filter_by}",
+# 		"redact_fields": ["{field_1}", "{field_2}"],
+# 		"partial": 1,
+# 	},
+# 	{
+# 		"doctype": "{doctype_2}",
+# 		"filter_by": "{filter_by}",
+# 		"partial": 1,
+# 	},
+# 	{
+# 		"doctype": "{doctype_3}",
+# 		"strict": False,
+# 	},
+# 	{
+# 		"doctype": "{doctype_4}"
+# 	}
+# ]
+
+# Authentication and authorization
+# --------------------------------
+
+# auth_hooks = [
+# 	"fibersoft_reports.auth.validate"
+# ]
+
+# Automatically update python controller files with type annotations for this app.
+# export_python_type_annotations = True
+
+# default_log_clearing_doctypes = {
+# 	"Logging DocType Name": 30  # days to retain logs
+# }
+
+# Translation
+# ------------
+# List of apps whose translatable strings should be excluded from this app's translations.
+# ignore_translatable_strings_from = []
+

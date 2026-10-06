@@ -1,0 +1,71 @@
+<!-- Copyright (c) 2026 Lumen Solutions. All rights reserved.
+     SPDX-License-Identifier: LicenseRef-Lumen-Proprietary
+     Proprietary and confidential. See license.txt. "Lumen Reports" is a trademark of Lumen Solutions. -->
+<template>
+  <div ref="el" class="theme-scope" :style="scopeStyle">
+    <slot />
+  </div>
+</template>
+
+<script setup>
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { themeVars, findPreset, isDefaultTheme, mergeTheme } from '@/lib/dashboardTheme'
+import { brandTheme } from '@/lib/brand'
+import { themeScope, themeVersion } from '@/lib/theme'
+
+const props = defineProps({
+  theme: { type: Object, default: null },
+  // the viewer paints the page behind the cards; the builder canvas doesn't,
+  // so the studio chrome keeps its own background
+  paint: { type: Boolean, default: false },
+})
+
+const el = ref(null)
+// what the dashboard sets wins; the rest comes from the site's identity
+const resolved = computed(() => mergeTheme(props.theme, brandTheme.value))
+const active = computed(() => !isDefaultTheme(resolved.value))
+
+const scopeStyle = computed(() => {
+  if (!active.value) return {}
+  const style = { ...themeVars(resolved.value) }
+  const preset = findPreset(resolved.value.preset)
+  if (preset) style.colorScheme = preset.base
+  if (props.paint) {
+    style.background = style['--canvas-bg'] || style['--bg'] || ''
+    style.color = style['--ink'] || ''
+  }
+  return style
+})
+
+// charts read their colors from this element rather than from <html>, so a
+// themed dashboard colors its own data. Registering the element is enough:
+// custom properties inherit, so anything the theme leaves unset still comes
+// from the app.
+function register() {
+  themeScope.value = active.value ? el.value : null
+}
+
+onMounted(register)
+onBeforeUnmount(() => {
+  if (themeScope.value === el.value) themeScope.value = null
+})
+
+watch(
+  resolved,
+  async () => {
+    register()
+    // let the new custom properties land before charts re-read them
+    await nextTick()
+    themeVersion.value += 1
+  },
+  { deep: true }
+)
+</script>
+
+<style scoped>
+.theme-scope {
+  /* a painted scope is the page surface itself, so it has to fill the space
+     it was given rather than shrink to its content */
+  display: block;
+}
+</style>

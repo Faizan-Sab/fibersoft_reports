@@ -1,0 +1,89 @@
+# Copyright (c) 2026 Lumen Solutions. All rights reserved.
+# SPDX-License-Identifier: LicenseRef-Lumen-Proprietary
+# Proprietary and confidential. See license.txt. "Lumen Reports" is a trademark of Lumen Solutions.
+
+"""Realtime invalidation: when a document changes, tell open dashboards
+that depend on its doctype to refresh their widgets.
+
+A registry mapping doctype -> [dashboard slugs] is cached in redis and
+rebuilt lazily whenever a Fibersoft Dashboard is saved or deleted."""
+
+import frappe
+
+REGISTRY_CACHE_KEY = "fibersoft_reports:doctype_registry"
+EVENT_NAME = "fibersoft_reports:invalidate"
+
+IGNORED_DOCTYPES = {
+	"Version",
+	"Comment",
+	"Activity Log",
+	"Access Log",
+	"Error Log",
+	"Scheduled Job Log",
+	"Route History",
+	"View Log",
+	"Notification Log",
+	"Email Queue",
+	"DocField",
+	"DocPerm",
+}
+
+
+def get_registry() -> dict:
+	registry = frappe.cache().get_value(REGISTRY_CACHE_KEY)
+	if registry is None:
+		registry = _build_registry()
+		frappe.cache().set_value(REGISTRY_CACHE_KEY, registry)
+	return registry
+
+
+def _build_registry() -> dict:
+	registry = {}
+	dashboards = frappe.get_all(
+		"Fibersoft Dashboard", filters={"auto_refresh": 1}, fields=["name", "route_slug"]
+	)
+	for dashboard in dashboards:
+		widgets = frappe.get_all(
+			"Fibersoft Widget",
+			filters={"parent": dashboard.name, "parenttype": "Fibersoft Dashboard"},
+			fields=["query_json"],
+		)
+		for widget in widgets:
+			query = frappe.parse_json(widget.query_json or "{}")
+			doctype = query.get("doctype")
+			if doctype:
+				registry.setdefault(doctype, [])
+				if dashboard.route_slug not in registry[doctype]:
+					registry[doctype].append(dashboard.route_slug)
+	return registry
+
+
+def notify_doc_change(doc, method=None, *args, **kwargs):
+	"""doc_events hook on every doctype (on_change / after_delete).
+	Extra args tolerated so a hook-signature change in a future Frappe
+	can never break every document save on the site."""
+	if doc.doctype in IGNORED_DOCTYPES or doc.doctype.startswith("Fibersoft "):
+		return
+	if frappe.flags.in_migrate or frappe.flags.in_install or frappe.flags.in_patch:
+		return
+
+	registry = get_registry()
+	slugs = registry.get(doc.doctype)
+	if not slugs:
+		return
+
+	# drop cached widget results for this doctype — same invalidation path
+	# as the realtime refresh, so cache and liveness can't disagree
+	frappe.cache().delete_keys(f"fibersoft_res|{doc.doctype}|")
+
+	# the message carries only a doctype name and dashboard slugs — no record
+	# data — and Frappe's socketio joins every authenticated desk client to the
+	# per-doctype room, which is the right scope for a "this doctype changed"
+	# signal (rather than a site-wide broadcast). Data still loads per-viewer
+	# through the permission-checked engine.
+	frappe.publish_realtime(
+		EVENT_NAME,
+		message={"doctype": doc.doctype, "dashboards": slugs},
+		doctype=doc.doctype,
+		after_commit=True,
+	)
